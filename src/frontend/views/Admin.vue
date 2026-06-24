@@ -30,7 +30,7 @@
               </button>
             </div>
           </div>
-          <div v-if="turnstileEnabled && turnstileSiteKey" class="login-form-group">
+          <div v-if="(turnstileEnabled || turnstileLoginEnabled) && turnstileSiteKey" class="login-form-group">
             <div id="admin-turnstile-container"></div>
           </div>
           <div v-if="loginError" id="login-error" class="login-error">{{ loginError }}</div>
@@ -305,9 +305,23 @@
             <div class="settings-section">
               <div class="section-title"><span>▸</span> {{ trans.securitySettings }}</div>
 
-              <div class="checkbox-item">
-                <input type="checkbox" id="cfg_turnstile_enabled" v-model="settings.turnstile_enabled">
-                <label><b>{{ trans.enableTurnstile }}</b></label>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="cfg_turnstile_enabled" v-model="settings.turnstile_enabled">
+                    <label><b>{{ trans.enableTurnstile }}</b></label>
+                  </div>
+                  </div>
+                <div class="form-group flex-1">
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="cfg_turnstile_login_enabled" v-model="settings.turnstile_login_enabled">
+                    <label>{{ trans.enableTurnstileLogin }}</label>
+                  </div>
+                  <p class="text-muted text-sm mt-1 mb-3">
+                    <span class="warning-icon">[i]</span>
+                    {{ trans.turnstileLoginTip }}
+                  </p>
+                </div>
               </div>
               
               <div class="form-row">
@@ -901,6 +915,7 @@ const loginForm = ref({ username: '', password: '' })
 const loginError = ref('')
 const loginLoading = ref(false)
 const turnstileEnabled = ref(false)
+const turnstileLoginEnabled = ref(false)
 const turnstileSiteKey = ref('')
 const turnstileToken = ref('')
 const activeTab = ref('servers')
@@ -1009,7 +1024,7 @@ const handleLogin = async () => {
     loginError.value = ''
     loginLoading.value = true
     
-    if (turnstileEnabled.value && !turnstileToken.value) {
+    if ((turnstileEnabled.value || turnstileLoginEnabled.value) && !turnstileToken.value) {
       loginError.value = 'Please complete the verification'
       loginLoading.value = false
       return
@@ -1070,9 +1085,10 @@ const loadTurnstileConfig = async () => {
     if (!result.error) {
       const config = result.data
       turnstileEnabled.value = config.turnstile_enabled === true || config.turnstile_enabled === 'true'
+      turnstileLoginEnabled.value = config.turnstile_login_enabled === true || config.turnstile_login_enabled === 'true'
       turnstileSiteKey.value = config.turnstile_site_key || ''
       
-      if (turnstileEnabled.value && turnstileSiteKey.value) {
+      if ((turnstileEnabled.value || turnstileLoginEnabled.value) && turnstileSiteKey.value) {
         await loadTurnstileScript()
         renderTurnstile()
       }
@@ -1135,6 +1151,7 @@ const loadSettings = async () => {
         tg_bot_token: settingsData.tg_bot_token || '',
         tg_chat_id: settingsData.tg_chat_id || '',
         turnstile_enabled: settingsData.turnstile_enabled === 'true',
+        turnstile_login_enabled: settingsData.turnstile_login_enabled === 'true',
         turnstile_site_key: settingsData.turnstile_site_key || '',
         turnstile_secret_key: settingsData.turnstile_secret_key || '',
         cloudflare_account_id: settingsData.cloudflare_account_id || '',
@@ -1181,8 +1198,8 @@ const saveSettings = async () => {
       }
     }
 
-    // 如果 turnstile_enabled 开启，验证 turnstile_site_key 和 turnstile_secret_key 都不为空
-    if (settings.value.turnstile_enabled) {
+    // 如果 turnstile_enabled 或 turnstile_login_enabled 开启，验证 turnstile_site_key 和 turnstile_secret_key 都不为空
+    if (settings.value.turnstile_enabled || settings.value.turnstile_login_enabled) {
       if (!settings.value.turnstile_site_key || settings.value.turnstile_site_key.trim().length === 0) {
         validationError.value = trans.value.turnstileSiteKeyRequired
         return
@@ -1221,6 +1238,7 @@ const saveSettings = async () => {
         tg_bot_token: settings.value.tg_bot_token,
         tg_chat_id: settings.value.tg_chat_id,
         turnstile_enabled: settings.value.turnstile_enabled ? 'true' : 'false',
+        turnstile_login_enabled: settings.value.turnstile_login_enabled ? 'true' : 'false',
         turnstile_site_key: settings.value.turnstile_site_key,
         turnstile_secret_key: settings.value.turnstile_secret_key,
         cloudflare_account_id: settings.value.cloudflare_account_id,

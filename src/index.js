@@ -184,6 +184,8 @@ export default {
       const turnstileEnabled = sys.turnstile_enabled === 'true';
       const turnstileSecretKey = sys.turnstile_secret_key || '';
       
+      // 全局 Turnstile 验证：仅 turnstile_enabled 开启时拦截所有 API 请求
+      // turnstile_login_enabled 仅在登录时验证，不在此处拦截
       if (turnstileEnabled) {
         const hasValidCookie = await isTurnstileVerified(request, env);
         
@@ -223,6 +225,7 @@ export default {
       { method: 'GET', path: '/api/config', handler: async () => {
         await ensureFullSettings();
         const turnstileEnabled = sys.turnstile_enabled === 'true';
+        const turnstileLoginEnabled = sys.turnstile_login_enabled === 'true';
         let verified = false;
         let turnstileVerified = null;
 
@@ -239,6 +242,7 @@ export default {
         return createSuccessResponse({
           version: getCurrentVersion(),
           turnstile_enabled: turnstileEnabled,
+          turnstile_login_enabled: turnstileLoginEnabled,
           turnstile_site_key: sys.turnstile_site_key || '',
           verified: verified,
           turnstile_verified: turnstileVerified,

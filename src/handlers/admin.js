@@ -153,9 +153,10 @@ export async function handleAdminAPI(request, env, sys) {
       }
 
       const turnstileEnabled = sys && (sys.turnstile_enabled === 'true' || sys.turnstile_enabled === true);
+      const turnstileLoginEnabled = sys && (sys.turnstile_login_enabled === 'true' || sys.turnstile_login_enabled === true);
       const turnstileSecretKey = sys && sys.turnstile_secret_key || '';
       
-      if (turnstileEnabled) {
+      if (turnstileEnabled || turnstileLoginEnabled) {
         const turnstileToken = request.headers.get('X-Turnstile-Token');
         const isTurnstileVerified = await verifyTurnstileToken(turnstileToken, turnstileSecretKey);
         
@@ -283,8 +284,8 @@ export async function handleAdminAPI(request, env, sys) {
     else if (data.action === 'save_settings') {
       const settings = data.settings || {};
 
-      // 如果 turnstile_enabled 开启，验证 turnstile_site_key 和 turnstile_secret_key 都不为空
-      if (settings.turnstile_enabled === 'true' || settings.turnstile_enabled === true) {
+      // 如果 turnstile_enabled 或 turnstile_login_enabled 开启，验证 turnstile_site_key 和 turnstile_secret_key 都不为空
+      if (settings.turnstile_enabled === 'true' || settings.turnstile_enabled === true || settings.turnstile_login_enabled === 'true' || settings.turnstile_login_enabled === true) {
         if (!settings.turnstile_site_key || settings.turnstile_site_key.trim().length === 0) {
           return createBadRequestResponse('Turnstile Site Key is required when Turnstile is enabled');
         }
@@ -301,7 +302,7 @@ export async function handleAdminAPI(request, env, sys) {
       }
 
       const APPEARANCE_FIELDS = ['site_title', 'custom_bg', 'custom_head', 'custom_script'];
-      const SITE_FIELDS = ['is_public', 'show_price', 'show_expire', 'show_bw', 'show_tf', 'show_long_history', 'tg_notify', 'tg_bot_token', 'tg_chat_id', 'turnstile_enabled', 'turnstile_site_key', 'turnstile_secret_key', 'jwt_secret', 'username', 'password', 'cloudflare_account_id', 'cloudflare_token', 'custom_ct', 'custom_cu', 'custom_cm', 'custom_bd', 'cleanup_skip_count', 'expire_reminder'];
+      const SITE_FIELDS = ['is_public', 'show_price', 'show_expire', 'show_bw', 'show_tf', 'show_long_history', 'tg_notify', 'tg_bot_token', 'tg_chat_id', 'turnstile_enabled', 'turnstile_login_enabled', 'turnstile_site_key', 'turnstile_secret_key', 'jwt_secret', 'username', 'password', 'cloudflare_account_id', 'cloudflare_token', 'custom_ct', 'custom_cu', 'custom_cm', 'custom_bd', 'cleanup_skip_count', 'expire_reminder'];
 
       const appearanceOptions = {};
       for (const field of APPEARANCE_FIELDS) {

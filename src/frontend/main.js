@@ -19,20 +19,28 @@ async function fetchConfig() {
   try {
     const results = await http.getAll('/api/config', { includeAuth: false, includeTurnstile: true })
     if (!results || results.length === 0) {
-      return { turnstile_enabled: false, turnstile_site_key: '', version: '' }
+      return { turnstile_enabled: false, turnstile_login_enabled: false, turnstile_site_key: '', version: '', verified: false }
     }
 
     let turnstileEnabled = false
+    let turnstileLoginEnabled = false
     let turnstileSiteKey = ''
     let version = ''
+    let verified = false
 
     for (const { data, error } of results) {
       if (error || !data) continue
       if (data.turnstile_enabled) {
         turnstileEnabled = true
       }
+      if (data.turnstile_login_enabled) {
+        turnstileLoginEnabled = true
+      }
       if (data.turnstile_site_key && !turnstileSiteKey) {
         turnstileSiteKey = data.turnstile_site_key
+      }
+      if (data.verified) {
+        verified = true
       }
       if (data.version && !version) {
         version = data.version
@@ -45,14 +53,15 @@ async function fetchConfig() {
 
     return {
       turnstile_enabled: turnstileEnabled,
+      turnstile_login_enabled: turnstileLoginEnabled,
       turnstile_site_key: turnstileSiteKey,
       version,
-      verified: false
+      verified
     }
   } catch (e) {
     console.error('Failed to fetch config:', e)
   }
-  return { turnstile_enabled: false, turnstile_site_key: '' }
+  return { turnstile_enabled: false, turnstile_login_enabled: false, turnstile_site_key: '', verified: false }
 }
 
 async function loadTurnstileScript() {
@@ -118,6 +127,7 @@ async function initApp() {
 
   const isRemoteMode = getAllApiBases().length > 0
 
+  // 仅全局模式需要在启动时验证 Turnstile；登录模式在 Admin 页面的登录表单中验证
   if (config.turnstile_enabled) {
     if (isRemoteMode) {
       // Remote mode does not support Turnstile - show notice and stop
